@@ -6,16 +6,28 @@ import random
 import csv
 import os
 from datetime import datetime
+from flask import Flask
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # 🔐 Токен и канал
 BOT_TOKEN = "7451657734:AAHNlKGH6YT2BRErXZV9Y619z7xD1GOY6Qs"
 CHANNEL_ID = "@golosbota"
 
-# 📅 Дата запуска (можешь заменить, если нужно)
+# 📅 Дата запуска
 LAUNCH_DATE = datetime(2025, 5, 11)
 
 bot = telebot.TeleBot(BOT_TOKEN)
+
+# 🌐 Flask-сервер для Render и UptimeRobot
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return 'Bot is running!'
+
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
 # 🔄 Выбор нужного датасета
 def get_dataset_file():
@@ -90,5 +102,6 @@ def callback_new_meme(call):
 
 # 🚀 Запуск
 if __name__ == "__main__":
+    threading.Thread(target=run_flask).start()
     threading.Thread(target=run_scheduler).start()
     bot.polling()
