@@ -6,25 +6,23 @@ import random
 import csv
 import os
 from datetime import datetime
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # 🔐 Токен и канал
 BOT_TOKEN = "7451657734:AAHNlKGH6YT2BRErXZV9Y619z7xD1GOY6Qs"
 CHANNEL_ID = "@golosbota"
 
-# 📅 Дата запуска (можешь заменить на фактическую дату)
+# 📅 Дата запуска (можешь заменить, если нужно)
 LAUNCH_DATE = datetime(2025, 5, 11)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 🔄 Выбор нужного файла по дате
+# 🔄 Выбор нужного датасета
 def get_dataset_file():
     days_since_start = (datetime.now() - LAUNCH_DATE).days
-    if days_since_start >= 30:
-        return "memes_month2.csv"
-    else:
-        return "memes.csv"
+    return "memes_month2.csv" if days_since_start >= 30 else "memes.csv"
 
-# 📥 Загрузка мемов из CSV
+# 📥 Загрузка мемов из файла
 def load_memes():
     filename = get_dataset_file()
     memes = []
@@ -33,10 +31,10 @@ def load_memes():
             reader = csv.DictReader(f)
             memes = [row['text'] for row in reader if row['text'].strip()]
     except Exception as e:
-        print(f"[!] Ошибка загрузки из {filename}: {e}")
+        print(f"[!] Ошибка загрузки {filename}: {e}")
     return memes
 
-# 📤 Отправка мема
+# 📤 Публикация мема в канал
 def post_meme():
     memes = load_memes()
     if memes:
@@ -46,28 +44,24 @@ def post_meme():
     else:
         print("[!] Мемов не найдено!")
 
-# 🕒 Расписание
+# 🕒 Расписание постинга
 schedule.every().day.at("09:00").do(post_meme)
 schedule.every().day.at("17:30").do(post_meme)
 
-# ⏱️ Планировщик в фоне
 def run_scheduler():
     while True:
         schedule.run_pending()
         time.sleep(1)
 
-# 🧪 Проверка бота
+# 📩 Команда /start
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, "Привет! Мемы публикуются каждый день: в 09:00 и в 17:30 📅")
+    bot.send_message(
+        message.chat.id,
+        "Привет! Я публикую мемы каждый день в 09:00 и 17:30 🕒\nХочешь мем прямо сейчас? Напиши /meme"
+    )
 
-# 🚀 Запуск
-if __name__ == "__main__":
-    threading.Thread(target=run_scheduler).start()
-    bot.polling()
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-# Команда /meme с кнопкой
+# 🎲 Команда /meme с кнопкой
 @bot.message_handler(commands=['meme'])
 def send_random_meme(message):
     memes = load_memes()
@@ -79,7 +73,7 @@ def send_random_meme(message):
     else:
         bot.send_message(message.chat.id, "Мемов не найдено 😔")
 
-# Обработка нажатия кнопки
+# 🔁 Обработка кнопки "Ещё мем"
 @bot.callback_query_handler(func=lambda call: call.data == "new_meme")
 def callback_new_meme(call):
     memes = load_memes()
@@ -93,3 +87,8 @@ def callback_new_meme(call):
             text=new_meme,
             reply_markup=markup
         )
+
+# 🚀 Запуск
+if __name__ == "__main__":
+    threading.Thread(target=run_scheduler).start()
+    bot.polling()
